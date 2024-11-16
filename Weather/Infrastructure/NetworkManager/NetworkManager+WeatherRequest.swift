@@ -15,7 +15,7 @@ protocol WeatherRequest {
 extension NetworkManager: WeatherRequest {
     
     func fetchWeatherForcity(city: String) async throws -> WeatherResponse {
-        var parameters: [String : Any] = ["location": city, "apikey": "lNH84ae0ZvxBGM8sVLgELcHMsKnbA6f6"]
+        let parameters: [String : Any] = ["location": city, "apikey": "lNH84ae0ZvxBGM8sVLgELcHMsKnbA6f6"]
         
         let weather: WeatherResponse = try await self.request(parameters: parameters)
         return weather
