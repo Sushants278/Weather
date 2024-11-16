@@ -8,6 +8,9 @@
 import SwiftUI
 
 struct ContentView: View {
+    
+    @StateObject var weatherListVM = WeatherListViewModel()
+    
     var body: some View {
         VStack {
             Image(systemName: "globe")
@@ -16,6 +19,10 @@ struct ContentView: View {
             Text("Hello, world!")
         }
         .padding()
+        .task {
+            
+            await weatherListVM.fetchWeather(city: "Mumbai")
+        }
     }
 }
 

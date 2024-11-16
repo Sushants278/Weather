@@ -1,8 +1,8 @@
 //
 //  NetworkManager.swift
-//  Randomizer
+//  Weather
 //
-//  Created by Sushant Shinde on 01/05/23.
+//  Created by Sushant Shinde on 16/10/24.
 //
 
 import Foundation
@@ -19,8 +19,13 @@ enum HTTPMethod: String {
 }
 
 class NetworkManager {
+    //https://api.tomorrow.io/v4/weather/realtime?location=toronto&apikey=lNH84ae0ZvxBGM8sVLgELcHMsKnbA6f6
     
-    private let baseURL = URL(string: "https://randomuser.me/api")!
+    static let shared = NetworkManager()
+    
+    private init() {}
+    
+    private let baseURL = URL(string: "https://api.tomorrow.io/v4/weather/realtime")!
     
     private let urlSession = URLSession.shared
  

@@ -1,8 +1,8 @@
 //
 //  NetworkManager + Rechability.swift
-//  MyPayBack
+//  Weather
 //
-//  Created by Sushant Shinde on 02/05/23.
+//  Created by Sushant Shinde on 16/10/24.
 //
 
 import Foundation

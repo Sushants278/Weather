@@ -8,27 +8,20 @@
 import Foundation
 
 
-typealias LocationWeatherClosure = ((Swift.Result<User, APIError>) -> Void)
+typealias LocationWeatherClosure = ((Swift.Result<WeatherResponse, APIError>) -> Void)
 
-// Protocol to define user requests
+// Protocol to define weather requests
 protocol WeatherRequest {
     
-    func fetchUsers(isLoadMore: Bool, pageNumber: Int, seed: String, handler: @escaping LocationWeatherClosure)
+    func fetchWeatherForcity(city: String, handler: @escaping LocationWeatherClosure)
 }
 
 // NetworkManager conforms to UserRequests
 extension NetworkManager: WeatherRequest {
     
-    // Function to fetch users from server
-    func fetchWeatherForUsers( isLoadMore: Bool = false, pageNumber: Int = 1, seed: String = "", handler: @escaping UserCompletionClosure) {
+    func fetchWeatherForcity(city: String, handler: @escaping LocationWeatherClosure) {
         
-        var parameters: [String : Any] = ["results": 25,"inc": "gender,name,nat,email,id" ]
-        
-        if isLoadMore {
-            
-            parameters["page"] = pageNumber
-            parameters["seed"] = seed
-        }
+        var parameters: [String : Any] = ["location": city,"apikey": "lNH84ae0ZvxBGM8sVLgELcHMsKnbA6f6" ]
         
         self.request(parameters: parameters, completion: handler)
     }
