@@ -12,13 +12,30 @@ class WeatherListViewModel: ObservableObject {
     @Published var weatherList = [WeatherResponse]()
     private var weatherManager: WeatherRequest = NetworkManager.shared
     
-    func fetchWeather(city: String) {
-        weatherManager.fetchWeatherForcity(city: city) { result in
-            switch result {
-            case .success(let weather):
-                self.weatherList.append(weather)
-            case .failure(let error):
-                print(error)
+    /// Fetch weather for multiple cities concurrently using async/await.
+    func fetchWeather(for cities: [String]) async {
+        DispatchQueue.main.async {
+              self.weatherList = []
+        }
+        
+        await withTaskGroup(of: WeatherResponse?.self) { group in
+            for city in cities {
+                group.addTask {
+                    do {
+                        return try await self.weatherManager.fetchWeatherForcity(city: city)
+                    } catch {
+                        print("Failed to fetch weather for \(city): \(error)")
+                        return nil
+                    }
+                }
+            }
+            
+            for await result in group {
+                if let weather = result {
+                    DispatchQueue.main.async {
+                        self.weatherList.append(weather)
+                    }
+                }
             }
         }
     }

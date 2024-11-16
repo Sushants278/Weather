@@ -28,22 +28,18 @@ struct WeatherData: Codable {
         case weatherCode
     }
 
-    // Custom Decoder
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         time = try container.decodeIfPresent(String.self, forKey: .time)
-
         let valuesContainer = try container.nestedContainer(keyedBy: ValuesKeys.self, forKey: .values)
         temperature = try valuesContainer.decodeIfPresent(Double.self, forKey: .temperature)
         humidity = try valuesContainer.decodeIfPresent(Int.self, forKey: .humidity)
         weatherCode = try valuesContainer.decodeIfPresent(Int.self, forKey: .weatherCode)
     }
 
-    // Custom Encoder
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encodeIfPresent(time, forKey: .time)
-
         var valuesContainer = container.nestedContainer(keyedBy: ValuesKeys.self, forKey: .values)
         try valuesContainer.encodeIfPresent(temperature, forKey: .temperature)
         try valuesContainer.encodeIfPresent(humidity, forKey: .humidity)

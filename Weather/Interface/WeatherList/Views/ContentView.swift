@@ -21,7 +21,7 @@ struct ContentView: View {
         .padding()
         .task {
             
-            await weatherListVM.fetchWeather(city: "Mumbai")
+            await weatherListVM.fetchWeather(for: ["Pune", "Mumbai", "Delhi"])
         }
     }
 }

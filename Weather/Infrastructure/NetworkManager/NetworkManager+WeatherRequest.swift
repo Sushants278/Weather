@@ -7,22 +7,17 @@
 
 import Foundation
 
-
-typealias LocationWeatherClosure = ((Swift.Result<WeatherResponse, APIError>) -> Void)
-
-// Protocol to define weather requests
 protocol WeatherRequest {
     
-    func fetchWeatherForcity(city: String, handler: @escaping LocationWeatherClosure)
+    func fetchWeatherForcity(city: String) async throws -> WeatherResponse
 }
 
-// NetworkManager conforms to UserRequests
 extension NetworkManager: WeatherRequest {
     
-    func fetchWeatherForcity(city: String, handler: @escaping LocationWeatherClosure) {
+    func fetchWeatherForcity(city: String) async throws -> WeatherResponse {
+        var parameters: [String : Any] = ["location": city, "apikey": "lNH84ae0ZvxBGM8sVLgELcHMsKnbA6f6"]
         
-        var parameters: [String : Any] = ["location": city,"apikey": "lNH84ae0ZvxBGM8sVLgELcHMsKnbA6f6" ]
-        
-        self.request(parameters: parameters, completion: handler)
+        let weather: WeatherResponse = try await self.request(parameters: parameters)
+        return weather
     }
 }
