@@ -42,3 +42,19 @@ struct WeatherData: Codable {
 struct LocationData: Codable {
     let name: String?
 }
+
+enum WeatherError: Error {
+    case fetchFailed(String)
+    case saveFailed(String)
+    case networkError(String)
+    case invalidData
+    
+    var localizedDescription: String {
+        switch self {
+        case .fetchFailed(let message): return "Failed to fetch weather: \(message)"
+        case .saveFailed(let message): return "Failed to save weather: \(message)"
+        case .networkError(let message): return "Network error: \(message)"
+        case .invalidData: return "Invalid weather data received"
+        }
+    }
+}

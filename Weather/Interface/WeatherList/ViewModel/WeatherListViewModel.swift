@@ -8,22 +8,6 @@
 import Foundation
 import CoreData
 
-enum WeatherError: Error {
-    case fetchFailed(String)
-    case saveFailed(String)
-    case networkError(String)
-    case invalidData
-    
-    var localizedDescription: String {
-        switch self {
-        case .fetchFailed(let message): return "Failed to fetch weather: \(message)"
-        case .saveFailed(let message): return "Failed to save weather: \(message)"
-        case .networkError(let message): return "Network error: \(message)"
-        case .invalidData: return "Invalid weather data received"
-        }
-    }
-}
-
 class WeatherListViewModel: ObservableObject {
     
     @Published var weatherList = [Weather]()
@@ -116,21 +100,28 @@ class WeatherListViewModel: ObservableObject {
     func refreshWeather(for city: String) async {
         guard !city.isEmpty else { return }
         
-        isLoading = true
-        error = nil
+        DispatchQueue.main.async {
+            
+            self.isLoading = true
+            self.error = nil
+        }
         
         do {
             let weather = try await weatherManager.fetchWeatherForcity(city: city)
             await saveWeatherToCoreData(weather)
         } catch {
-            self.error = .networkError(error.localizedDescription)
+            DispatchQueue.main.async {
+                self.error = .networkError(error.localizedDescription)
+            }
         }
         
-        isLoading = false
+        DispatchQueue.main.async {
+            self.isLoading = false
+        }
     }
     
     private func fetchInitialWeatherData() async {
-        let defaultCities = ["London", "New York", "Tokyo"] // Move this to a configuration if needed
+        let defaultCities = ["Berlin", "Dallas", "London", "Paris", "Shimla"]
         await fetchWeather(for: defaultCities)
     }
     
@@ -177,7 +168,6 @@ class WeatherListViewModel: ObservableObject {
     private func fetchWeatherFromCoreData() -> [Weather] {
         let context = coreDataManager.container.viewContext
         let fetchRequest: NSFetchRequest<Weather> =  NSFetchRequest(entityName: "WeatherInfo")
-        
         do {
             return try context.fetch(fetchRequest)
         } catch {

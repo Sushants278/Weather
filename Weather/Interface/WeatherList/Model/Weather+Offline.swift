@@ -15,5 +15,19 @@ class Weather: NSManagedObject {
     @NSManaged var cityName: String
     @NSManaged var time: String
     @NSManaged var id: String
-    @NSManaged var lastUpdated: Date
+}
+
+extension Weather {
+    var country: String {
+        return cityName.components(separatedBy: ",").last ?? ""
+    }
+    
+    var city: String {
+        return cityName.components(separatedBy: ",").first ?? ""
+    }
+    
+    var imageName: String {
+        let availableImages = ["Berlin", "Dallas County", "City of London", "Paris", "Shimla"]
+        return availableImages.contains(city) ? city : "defaultImage"
+    }
 }
