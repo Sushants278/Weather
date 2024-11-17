@@ -10,8 +10,8 @@ import CoreData
 
 /// Sort options for weather list.
 enum SortOption {
-       case byName
-       case byTemperature
+    case byName
+    case byTemperature
 }
 
 class WeatherListViewModel: ObservableObject {
@@ -21,10 +21,10 @@ class WeatherListViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var error: WeatherError?
     @Published var sortOption: SortOption = .byName {
-           didSet {
-               sortWeatherList()
-           }
-       }
+        didSet {
+            sortWeatherList()
+        }
+    }
     
     private let weatherManager: WeatherRequest
     private let offlineManager: WeatherOfflineRequest
@@ -34,12 +34,32 @@ class WeatherListViewModel: ObservableObject {
     /// - Parameters:  weatherManager: WeatherRequest object to fetch weather data.
     ///                offlineManager: WeatherOfflineRequest object to fetch offline weather data.
     init(weatherManager: WeatherRequest = NetworkManager.shared,
-            offlineManager: WeatherOfflineRequest = CoreDataManager.shared) {
-           self.weatherManager = weatherManager
-           self.offlineManager = offlineManager
+         offlineManager: WeatherOfflineRequest = CoreDataManager.shared) {
+        self.weatherManager = weatherManager
+        self.offlineManager = offlineManager
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleCoreDataChanges),
+            name: .NSManagedObjectContextDidSave,
+            object: nil
+        )
     }
     
-    // MARK: - Public methods
+    /// Deinitializes the  removes observers.
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    /// Handles core data changes.
+    /// - Parameter notification: Notification
+    /// - Note: This method is called when core data changes are detected.
+    @objc private func handleCoreDataChanges(_ notification: Notification) {
+        Task { @MainActor in
+            await getWeather()
+        }
+    }
+    
     
     /// Fetches weather data from offline storage or triggers an online fetch if offline data is unavailable.
     ///
@@ -162,13 +182,13 @@ class WeatherListViewModel: ObservableObject {
     
     /// sort weather list based on selected option
     private func sortWeatherList() {
-           switch sortOption {
-           case .byName:
-               weatherList.sort { $0.city < $1.city }
-           case .byTemperature:
-               weatherList.sort { $0.temperature < $1.temperature }
-           }
-       }
+        switch sortOption {
+        case .byName:
+            weatherList.sort { $0.city < $1.city }
+        case .byTemperature:
+            weatherList.sort { $0.temperature < $1.temperature }
+        }
+    }
 }
 
 // MARK: - FailedCitiesTracker
