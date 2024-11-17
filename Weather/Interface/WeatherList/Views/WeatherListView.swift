@@ -24,13 +24,34 @@ struct WeatherListView: View {
             }
             .navigationTitle("Weather")
             .toolbar {
+                // Refresh All Button with Icon
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Refresh All") {
+                    Button(action: {
                         Task {
                             await viewModel.fetchInitialWeatherData()
                         }
+                    }) {
+                        Image(systemName: "arrow.clockwise")
                     }
                     .disabled(viewModel.isLoading)
+                }
+
+                // Sort Menu
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Menu {
+                        Button(action: {
+                            viewModel.sortOption = .byName
+                        }) {
+                            Label("Sort by Name", systemImage: viewModel.sortOption == .byName ? "checkmark" : "")
+                        }
+                        Button(action: {
+                            viewModel.sortOption = .byTemperature
+                        }) {
+                            Label("Sort by Temperature", systemImage: viewModel.sortOption == .byTemperature ? "checkmark" : "")
+                        }
+                    } label: {
+                        Label("Sort", systemImage: "arrow.up.arrow.down")
+                    }
                 }
             }
             .overlay {
@@ -103,13 +124,14 @@ struct WeatherRowView: View {
             .padding()
         }
         .overlay(
-            // Refresh button in the top-right corner
-            Button(action: onRefresh) {
-                Image(systemName: "arrow.clockwise")
-                    .padding()
-                    .background(Color.black.opacity(0.5))
-                    .clipShape(Circle())
-                    .foregroundColor(.white)
+            ZStack {
+                Button(action: onRefresh) {
+                    Image(systemName: "arrow.clockwise")
+                        .padding()
+                        .background(Color.black.opacity(0.5))
+                        .clipShape(Circle())
+                        .foregroundColor(.white)
+                }
             }
             .padding(),
             alignment: .topTrailing

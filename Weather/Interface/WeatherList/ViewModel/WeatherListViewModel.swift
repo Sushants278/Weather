@@ -8,10 +8,20 @@
 import Foundation
 import CoreData
 
+enum SortOption {
+       case byName
+       case byTemperature
+}
+
 class WeatherListViewModel: ObservableObject {
     @Published var weatherList = [Weather]()
     @Published var isLoading = false
     @Published var error: WeatherError?
+    @Published var sortOption: SortOption = .byName {
+           didSet {
+               sortWeatherList()
+           }
+       }
     
     private let weatherManager: WeatherRequest = NetworkManager.shared
     private let offlineManager: WeatherOfflineRequest = CoreDataManager.shared
@@ -22,7 +32,10 @@ class WeatherListViewModel: ObservableObject {
             if storedData.isEmpty {
                 await fetchInitialWeatherData()
             } else {
-                await MainActor.run { self.weatherList = storedData }
+                await MainActor.run {
+                    self.weatherList = storedData
+                    sortWeatherList()
+                }
             }
         } catch {
             await MainActor.run { self.error = .fetchFailed("Failed to load offline data.") }
@@ -118,6 +131,15 @@ class WeatherListViewModel: ObservableObject {
             self.isLoading = false
         }
     }
+    
+    private func sortWeatherList() {
+           switch sortOption {
+           case .byName:
+               weatherList.sort { $0.city < $1.city }
+           case .byTemperature:
+               weatherList.sort { $0.temperature < $1.temperature }
+           }
+       }
 }
 
 actor FailedCitiesTracker {
