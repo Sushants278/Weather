@@ -7,12 +7,13 @@
 
 import Foundation
 
+// MARK: - APIError
 enum APIError: Error {
     case networkError(Error)
     case apiError(Int, String)
     case decodingError(Error)
 }
-
+// MARK: - HTTPMethod
 enum HTTPMethod: String {
     case get = "GET"
 }
@@ -25,6 +26,12 @@ class NetworkManager {
     private let baseURL = URL(string: "https://api.tomorrow.io/v4/weather/realtime")!
     private let urlSession = URLSession.shared
     
+    /// Request function to make network calls
+    /// - Parameters
+    ///  - method: HTTPMethod
+    ///  - parameters: [String: Any]
+    ///  - Returns: T
+    ///  - Throws: APIError
     func request<T: Decodable>(method: HTTPMethod = .get, parameters: [String: Any]? = nil) async throws -> T {
         var urlComponents = URLComponents(url: baseURL, resolvingAgainstBaseURL: true)!
         urlComponents.queryItems = parameters?.map { URLQueryItem(name: $0, value: "\($1)") }

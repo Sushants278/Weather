@@ -8,9 +8,11 @@
 import SwiftUI
 
 struct WeatherRowView: View {
+    // MARK: - Properties
     let weather: Weather
     let onRefresh: () -> Void
 
+    // MARK: - Body
     var body: some View {
         ZStack(alignment: .bottomLeading) {
             Image(weather.imageName)

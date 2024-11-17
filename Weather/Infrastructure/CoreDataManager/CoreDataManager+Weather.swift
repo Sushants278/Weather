@@ -7,6 +7,7 @@
 
 import CoreData
 
+/// Protocol to handle weather requests
 protocol WeatherOfflineRequest {
     func fetchWeatherFromCoreData() async throws -> [Weather]
     func saveWeatherToCoreData(_ weather: WeatherResponse) async throws
@@ -14,6 +15,10 @@ protocol WeatherOfflineRequest {
 }
 
 extension CoreDataManager: WeatherOfflineRequest {
+    
+    /// Fetches weather from Core Data
+    /// - Throws: Error
+    ///  - Returns: [Weather]
     func fetchWeatherFromCoreData() async throws -> [Weather] {
         let context = container.viewContext
         let fetchRequest: NSFetchRequest<Weather> = NSFetchRequest(entityName: "WeatherInfo")
@@ -23,6 +28,10 @@ extension CoreDataManager: WeatherOfflineRequest {
         }
     }
     
+    /// Saves weather to Core Data
+    /// - Parameter weather: WeatherResponse
+    /// - Throws: Error
+    /// - Returns: Void
     func saveWeatherToCoreData(_ weather: WeatherResponse) async throws {
         let context = newBackgroundContext()
         
@@ -42,6 +51,10 @@ extension CoreDataManager: WeatherOfflineRequest {
         }
     }
     
+    /// Fetches weather for a city from Core Data
+    /// - Parameter city: City name
+    /// - Throws: Error
+    /// - Returns: Weather
     func fetchWeather(for city: String) async throws -> Weather? {
         let context = container.viewContext
         let fetchRequest: NSFetchRequest<Weather> = NSFetchRequest(entityName: "WeatherInfo")

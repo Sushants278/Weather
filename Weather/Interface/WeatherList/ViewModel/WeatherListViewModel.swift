@@ -8,12 +8,15 @@
 import Foundation
 import CoreData
 
+/// Sort options for weather list.
 enum SortOption {
        case byName
        case byTemperature
 }
 
 class WeatherListViewModel: ObservableObject {
+    
+    // Published properties
     @Published var weatherList = [Weather]()
     @Published var isLoading = false
     @Published var error: WeatherError?
@@ -25,13 +28,25 @@ class WeatherListViewModel: ObservableObject {
     
     private let weatherManager: WeatherRequest
     private let offlineManager: WeatherOfflineRequest
-       
+    
+    // MARK: - Initializer
+    /// Initializes the view model with default values.
+    /// - Parameters:  weatherManager: WeatherRequest object to fetch weather data.
+    ///                offlineManager: WeatherOfflineRequest object to fetch offline weather data.
     init(weatherManager: WeatherRequest = NetworkManager.shared,
             offlineManager: WeatherOfflineRequest = CoreDataManager.shared) {
            self.weatherManager = weatherManager
            self.offlineManager = offlineManager
     }
     
+    // MARK: - Public methods
+    
+    /// Fetches weather data from offline storage or triggers an online fetch if offline data is unavailable.
+    ///
+    /// If offline data exists, it updates and sorts `weatherList`.
+    /// Otherwise, it fetches new data online. Errors are captured in the `error` property.
+    ///
+    /// - Throws: `WeatherError` if offline data retrieval fails.
     func getWeather() async {
         do {
             let storedData = try await offlineManager.fetchWeatherFromCoreData()
@@ -40,7 +55,6 @@ class WeatherListViewModel: ObservableObject {
             } else {
                 await MainActor.run {
                     self.weatherList = storedData
-                    sortWeatherList()
                 }
             }
         } catch {
@@ -48,6 +62,8 @@ class WeatherListViewModel: ObservableObject {
         }
     }
     
+    /// Fetches weather data for a list of cities.
+    /// - Throws: `WeatherError` if network fetch fails.
     func fetchInitialWeatherData() async {
         let defaultCities = ["Berlin", "Dallas", "London", "Paris", "Shimla"]
         
@@ -61,6 +77,9 @@ class WeatherListViewModel: ObservableObject {
         await fetchWeather(for: defaultCities)
     }
     
+    /// Fetches weather data for a list of cities.
+    /// - Parameter cities: List of city names.
+    /// - Throws: `WeatherError` if network fetch fails.
     func fetchWeather(for cities: [String]) async {
         guard !cities.isEmpty else { return }
         await MainActor.run {
@@ -102,6 +121,9 @@ class WeatherListViewModel: ObservableObject {
         }
     }
     
+    /// Refreshes weather data for a single city.
+    /// - Parameter city: Name of the city to refresh.
+    /// - Throws: `WeatherError` if network fetch fails.
     func refreshWeather(for city: String) async {
         guard !city.isEmpty else { return }
         
@@ -138,6 +160,7 @@ class WeatherListViewModel: ObservableObject {
         }
     }
     
+    /// sort weather list based on selected option
     private func sortWeatherList() {
            switch sortOption {
            case .byName:
@@ -148,6 +171,9 @@ class WeatherListViewModel: ObservableObject {
        }
 }
 
+// MARK: - FailedCitiesTracker
+
+/// Helper class to track failed cities during network fetch.
 actor FailedCitiesTracker {
     private var cities: [String] = []
     

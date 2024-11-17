@@ -8,8 +8,11 @@
 import SwiftUI
 
 struct WeatherListView: View {
+    
+    /// The view model for the weather list view.
     @StateObject private var viewModel = WeatherListViewModel()
 
+    //MARK: - Body
     var body: some View {
         NavigationView {
             List {
@@ -22,9 +25,7 @@ struct WeatherListView: View {
                      .frame(maxWidth: .infinity, alignment: .leading)
                      .padding(.vertical, 8)
                      .listRowSeparator(.hidden)
-                     
-                     
-                }
+                    }
             }
             .navigationTitle("Weather")
             .toolbar {

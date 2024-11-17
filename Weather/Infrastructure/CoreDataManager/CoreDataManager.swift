@@ -11,10 +11,12 @@ import Foundation
 
 class CoreDataManager {
 
+    // Mark:- properties
     static let shared = CoreDataManager()
 
     private init() {}
 
+    /// The persistent container for the application.
     lazy var container: NSPersistentContainer = {
         let container = NSPersistentContainer(name: "WeatherModel")
         container.loadPersistentStores { storeDescription, error in
@@ -26,6 +28,7 @@ class CoreDataManager {
         return container
     }()
 
+    /// The background context for the application.
     func newBackgroundContext() -> NSManagedObjectContext {
         let context = container.newBackgroundContext()
         context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
@@ -33,6 +36,7 @@ class CoreDataManager {
         return context
     }
 
+    /// The main context for the application.
     func saveContext(context: NSManagedObjectContext) {
         if context.hasChanges {
             do {
