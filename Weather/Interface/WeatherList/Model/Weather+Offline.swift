@@ -19,7 +19,7 @@ class Weather: NSManagedObject {
 
 extension Weather {
     var country: String {
-        return cityName.components(separatedBy: ",").last ?? ""
+        return cityName.components(separatedBy: ",").last?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     }
     
     var city: String {

@@ -26,7 +26,6 @@ class CoreDataManager {
         return container
     }()
 
-    // Create a private background context for insert operations
     func newBackgroundContext() -> NSManagedObjectContext {
         let context = container.newBackgroundContext()
         context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
@@ -34,7 +33,6 @@ class CoreDataManager {
         return context
     }
 
-    // Save the context
     func saveContext(context: NSManagedObjectContext) {
         if context.hasChanges {
             do {

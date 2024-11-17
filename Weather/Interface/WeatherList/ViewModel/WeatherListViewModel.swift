@@ -9,171 +9,125 @@ import Foundation
 import CoreData
 
 class WeatherListViewModel: ObservableObject {
-    
     @Published var weatherList = [Weather]()
     @Published var isLoading = false
     @Published var error: WeatherError?
-    private var weatherManager: WeatherRequest = NetworkManager.shared
-    private let coreDataManager = CoreDataManager.shared
     
-    
-    init() {
-        // Setup notification observer for Core Data changes
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleCoreDataChanges),
-            name: .NSManagedObjectContextDidSave,
-            object: nil
-        )
-    }
-    
-    
-    deinit {
-        NotificationCenter.default.removeObserver(self)
-    }
-    
-    @objc private func handleCoreDataChanges(_ notification: Notification) {
-        Task { @MainActor in
-            weatherList = fetchWeatherFromCoreData()
-        }
-    }
+    private let weatherManager: WeatherRequest = NetworkManager.shared
+    private let offlineManager: WeatherOfflineRequest = CoreDataManager.shared
     
     func getWeather() async {
-        Task {
-            let storedData = fetchWeatherFromCoreData()
+        do {
+            let storedData = try await offlineManager.fetchWeatherFromCoreData()
             if storedData.isEmpty {
-                // If no stored data, fetch fresh data for default cities
                 await fetchInitialWeatherData()
             } else {
-                // If we have stored data, load it and refresh if stale
-                DispatchQueue.main.async {
-                    
-                    self.weatherList = storedData
-                }
+                await MainActor.run { self.weatherList = storedData }
             }
+        } catch {
+            await MainActor.run { self.error = .fetchFailed("Failed to load offline data.") }
         }
     }
     
-    /// Load offline data from Core Data
-    private func loadOfflineData() {
+    func fetchInitialWeatherData() async {
+        let defaultCities = ["Berlin", "Dallas", "London", "Paris", "Shimla"]
         
-        weatherList = fetchWeatherFromCoreData()
+        guard Reachability.isConnectedToNetwork() else {
+            await MainActor.run {
+                self.error = .networkError("No internet connection.")
+            }
+            return
+        }
+        
+        await fetchWeather(for: defaultCities)
     }
     
-    /// Fetch weather for multiple cities concurrently using async/await.
     func fetchWeather(for cities: [String]) async {
         guard !cities.isEmpty else { return }
-        
-        DispatchQueue.main.async {
-            
-            self.isLoading = true
-            self.error = nil
+        await MainActor.run {
+            isLoading = true
+            error = nil
         }
         
-        await withTaskGroup(of: WeatherResponse?.self) { group in
+        let failedCitiesTracker = FailedCitiesTracker()
+        
+        await withTaskGroup(of: (String, WeatherResponse?).self) { group in
             for city in cities {
                 group.addTask {
                     do {
-                        return try await self.weatherManager.fetchWeatherForcity(city: city)
+                        let weather = try await self.weatherManager.fetchWeatherForcity(city: city)
+                        return (city, weather)
                     } catch {
-                        await MainActor.run {
-                            self.error = .networkError(error.localizedDescription)
-                        }
-                        return nil
+                        await failedCitiesTracker.add(city)
+                        return (city, nil)
                     }
                 }
             }
             
-            for await result in group {
+            for await (_, result) in group {
                 if let weather = result {
-                    await saveWeatherToCoreData(weather)
+                    try? await offlineManager.saveWeatherToCoreData(weather)
                 }
             }
         }
         
-        DispatchQueue.main.async {
-            
-            self.isLoading = false
+        let failedCities = await failedCitiesTracker.allFailedCities()
+        
+        if !failedCities.isEmpty {
+            await MainActor.run {
+                error = .networkError("Failed to fetch weather for: \(failedCities.joined(separator: ", "))")
+            }
+        }
+        await MainActor.run {
+            isLoading = false
         }
     }
     
     func refreshWeather(for city: String) async {
         guard !city.isEmpty else { return }
         
-        DispatchQueue.main.async {
-            
+        guard Reachability.isConnectedToNetwork() else {
+            await MainActor.run {
+                self.error = .networkError("No internet connection. Please check your network and try again.")
+            }
+            return
+        }
+        
+        // Indicate loading state
+        await MainActor.run {
             self.isLoading = true
             self.error = nil
         }
         
         do {
             let weather = try await weatherManager.fetchWeatherForcity(city: city)
-            await saveWeatherToCoreData(weather)
+            
+            try await offlineManager.saveWeatherToCoreData(weather)
+            
+            let storedData = try await offlineManager.fetchWeatherFromCoreData()
+            await MainActor.run {
+                self.weatherList = storedData
+            }
         } catch {
-            DispatchQueue.main.async {
-                self.error = .networkError(error.localizedDescription)
+            await MainActor.run {
+                self.error = .fetchFailed("Failed to refresh weather data for \(city). Please try again.")
             }
         }
         
-        DispatchQueue.main.async {
+        await MainActor.run {
             self.isLoading = false
-        }
-    }
-    
-    private func fetchInitialWeatherData() async {
-        let defaultCities = ["Berlin", "Dallas", "London", "Paris", "Shimla"]
-        await fetchWeather(for: defaultCities)
-    }
-    
-    
-    private func saveWeatherToCoreData(_ weather: WeatherResponse) async {
-        let context = coreDataManager.newBackgroundContext()
-        
-        await context.perform { [weak self] in
-            guard let self = self else { return }
-            
-            let fetchRequest: NSFetchRequest<Weather> = NSFetchRequest(entityName: "WeatherInfo")
-            fetchRequest.predicate = NSPredicate(format: "cityName == %@", weather.location?.name ?? "")
-            
-            do {
-                let existingWeather = try context.fetch(fetchRequest).first
-                
-                if let existingWeather = existingWeather {
-                    self.updateWeatherEntity(existingWeather, with: weather)
-                } else {
-                    let weatherEntity = Weather(context: context)
-                    self.updateWeatherEntity(weatherEntity, with: weather)
-                    weatherEntity.id = UUID().uuidString
-                }
-                
-                try context.save()
-                
-            } catch {
-                DispatchQueue.main.async {
-                    self.error = .saveFailed(error.localizedDescription)
-                }
-            }
-        }
-    }
-    
-    
-    private func updateWeatherEntity(_ entity: Weather, with response: WeatherResponse) {
-        entity.cityName = response.location?.name ?? ""
-        entity.temperature = response.data?.temperature ?? 0.0
-        entity.time = response.data?.time ?? ""
-    }
-    
-    
-    // Fetch weather data from Core Data
-    private func fetchWeatherFromCoreData() -> [Weather] {
-        let context = coreDataManager.container.viewContext
-        let fetchRequest: NSFetchRequest<Weather> =  NSFetchRequest(entityName: "WeatherInfo")
-        do {
-            return try context.fetch(fetchRequest)
-        } catch {
-            self.error = .fetchFailed(error.localizedDescription)
-            return []
         }
     }
 }
 
+actor FailedCitiesTracker {
+    private var cities: [String] = []
+    
+    func add(_ city: String) {
+        cities.append(city)
+    }
+    
+    func allFailedCities() -> [String] {
+        return cities
+    }
+}

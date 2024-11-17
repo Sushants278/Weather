@@ -9,8 +9,7 @@ import SwiftUI
 
 struct WeatherListView: View {
     @StateObject private var viewModel = WeatherListViewModel()
-    private let cities = ["Berlin", "Dallas", "London", "Paris", "Shimla"] // Example cities
-    
+
     var body: some View {
         NavigationView {
             List {
@@ -28,21 +27,37 @@ struct WeatherListView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Refresh All") {
                         Task {
-                            await viewModel.fetchWeather(for: cities)
+                            await viewModel.fetchInitialWeatherData()
                         }
                     }
+                    .disabled(viewModel.isLoading)
                 }
             }
             .overlay {
                 if viewModel.isLoading {
-                    ProgressView()
+                    ProgressView("Loading...")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Color.black.opacity(0.3))
+                        .ignoresSafeArea()
                 }
             }
             .alert("Error", isPresented: Binding(
                 get: { viewModel.error != nil },
                 set: { if !$0 { viewModel.error = nil } }
             )) {
-                Text(viewModel.error?.localizedDescription ?? "Unknown error")
+                Button("Retry") {
+                    Task {
+                        await viewModel.fetchInitialWeatherData()
+                    }
+                }
+                Button("Dismiss") {
+                    viewModel.error = nil
+                }
+            } message: {
+                Text(viewModel.error?.localizedDescription ?? "Unknown error. Try pulling to refresh or clicking 'Refresh All.'")
+            }
+            .refreshable {
+                await viewModel.fetchInitialWeatherData()
             }
         }
         .task {
@@ -51,13 +66,11 @@ struct WeatherListView: View {
     }
 }
 
-
 struct WeatherRowView: View {
     let weather: Weather
     let onRefresh: () -> Void
-    
+
     var body: some View {
-    
         ZStack(alignment: .bottomLeading) {
             // Background image
             Image(weather.imageName)
@@ -66,22 +79,23 @@ struct WeatherRowView: View {
                 .frame(height: 200)
                 .clipped()
                 .cornerRadius(10)
-            
+
             Color.black.opacity(0.3)
                 .frame(height: 200)
                 .clipped()
                 .cornerRadius(10)
-            
-            VStack(alignment: .leading, spacing: 8) {
+
+            VStack(alignment: .leading, spacing: 5) {
                 Text("\(weather.temperature, specifier: "%.1f")°C")
                     .font(.largeTitle)
                     .bold()
                     .foregroundColor(.white)
                     .shadow(radius: 2)
+
                 Text(weather.city)
                     .font(.headline)
                     .foregroundColor(.white)
-                
+
                 Text(weather.country)
                     .font(.subheadline)
                     .foregroundColor(.white.opacity(0.7))
@@ -100,7 +114,5 @@ struct WeatherRowView: View {
             .padding(),
             alignment: .topTrailing
         )
-       // .padding(.horizontal)
     }
 }
-
