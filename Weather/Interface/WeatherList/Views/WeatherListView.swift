@@ -15,16 +15,19 @@ struct WeatherListView: View {
             List {
                 ForEach(viewModel.weatherList, id: \.id) { weather in
                     WeatherRowView(weather: weather) {
-                        // Refresh single city
                         Task {
                             await viewModel.refreshWeather(for: weather.cityName)
                         }
-                    }
+                    }.listRowInsets(EdgeInsets())
+                     .frame(maxWidth: .infinity, alignment: .leading)
+                     .padding(.vertical, 8)
+                     .listRowSeparator(.hidden)
+                     
+                     
                 }
             }
             .navigationTitle("Weather")
             .toolbar {
-                // Refresh All Button with Icon
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
                         Task {
@@ -36,7 +39,6 @@ struct WeatherListView: View {
                     .disabled(viewModel.isLoading)
                 }
 
-                // Sort Menu
                 ToolbarItem(placement: .navigationBarLeading) {
                     Menu {
                         Button(action: {
@@ -87,54 +89,3 @@ struct WeatherListView: View {
     }
 }
 
-struct WeatherRowView: View {
-    let weather: Weather
-    let onRefresh: () -> Void
-
-    var body: some View {
-        ZStack(alignment: .bottomLeading) {
-            // Background image
-            Image(weather.imageName)
-                .resizable()
-                .scaledToFill()
-                .frame(height: 200)
-                .clipped()
-                .cornerRadius(10)
-
-            Color.black.opacity(0.3)
-                .frame(height: 200)
-                .clipped()
-                .cornerRadius(10)
-
-            VStack(alignment: .leading, spacing: 5) {
-                Text("\(weather.temperature, specifier: "%.1f")°C")
-                    .font(.largeTitle)
-                    .bold()
-                    .foregroundColor(.white)
-                    .shadow(radius: 2)
-
-                Text(weather.city)
-                    .font(.headline)
-                    .foregroundColor(.white)
-
-                Text(weather.country)
-                    .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.7))
-            }
-            .padding()
-        }
-        .overlay(
-            ZStack {
-                Button(action: onRefresh) {
-                    Image(systemName: "arrow.clockwise")
-                        .padding()
-                        .background(Color.black.opacity(0.5))
-                        .clipShape(Circle())
-                        .foregroundColor(.white)
-                }
-            }
-            .padding(),
-            alignment: .topTrailing
-        )
-    }
-}

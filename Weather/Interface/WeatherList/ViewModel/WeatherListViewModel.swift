@@ -23,8 +23,14 @@ class WeatherListViewModel: ObservableObject {
            }
        }
     
-    private let weatherManager: WeatherRequest = NetworkManager.shared
-    private let offlineManager: WeatherOfflineRequest = CoreDataManager.shared
+    private let weatherManager: WeatherRequest
+    private let offlineManager: WeatherOfflineRequest
+       
+    init(weatherManager: WeatherRequest = NetworkManager.shared,
+            offlineManager: WeatherOfflineRequest = CoreDataManager.shared) {
+           self.weatherManager = weatherManager
+           self.offlineManager = offlineManager
+    }
     
     func getWeather() async {
         do {
